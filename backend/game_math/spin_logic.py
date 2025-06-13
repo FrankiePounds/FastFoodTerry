@@ -1,20 +1,15 @@
 import random
 
-# Symbols
+# Symbols (SCATTER/BURGER is only allowed on reels 1, 3, 5)
 SYMBOLS = [
     "10", "J", "Q", "K", "A",
     "PIZZA", "FRY", "SHAKE",
-    "BURGER",  # Scatter
     "TERRY"    # Wild
 ]
+SCATTER = "BURGER"
 
-REELS = [
-    ["10", "J", "Q", "K", "A", "PIZZA", "FRY", "SHAKE", "BURGER", "TERRY"] * 3,
-    ["J", "Q", "K", "A", "10", "FRY", "PIZZA", "SHAKE", "BURGER", "TERRY"] * 3,
-    ["Q", "K", "A", "10", "J", "SHAKE", "FRY", "PIZZA", "BURGER", "TERRY"] * 3,
-    ["K", "A", "10", "J", "Q", "PIZZA", "FRY", "SHAKE", "BURGER", "TERRY"] * 3,
-    ["A", "10", "J", "Q", "K", "FRY", "PIZZA", "SHAKE", "BURGER", "TERRY"] * 3,
-]
+REELS = 5
+ROWS = 3
 
 PAYLINES = [
     [0, 0, 0, 0, 0],
@@ -34,7 +29,6 @@ PAYOUTS = {
     "10":    {3: 0.5, 4: 1, 5: 2},
 }
 
-# Track session state
 session_state = {
     "spin_count": 0,
     "consecutive_losses": 0,
@@ -42,11 +36,19 @@ session_state = {
 }
 
 def spin():
-    reels_result = []
-    for reel in REELS:
-        start = random.randint(0, len(reel) - 3)
-        reels_result.append(reel[start:start + 3])
-    return reels_result
+    grid = []
+    for col in range(REELS):
+        col_syms = []
+        for row in range(ROWS):
+            if col in [0, 2, 4]:  # Only allow scatter on reels 1, 3, 5 (0-indexed)
+                # 1 in 8 chance for a BURGER, adjust as desired
+                sym = random.choices([SCATTER] + SYMBOLS, weights=[1, 7, 7, 7, 7, 7, 7, 7, 7, 7])[0]
+            else:
+                # Never scatter on these reels
+                sym = random.choice(SYMBOLS)
+            col_syms.append(sym)
+        grid.append(col_syms)
+    return grid
 
 def terry_kick_spin():
     return [
@@ -87,6 +89,7 @@ def evaluate_spin(grid):
             payout = PAYOUTS.get(result_symbol, {}).get(match_count, 0)
             total_win += payout
 
+    # Check for BURGER on reels 1, 3, 5 (scatter)
     if (
         "BURGER" in grid[0] and
         "BURGER" in grid[2] and
